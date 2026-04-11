@@ -1,10 +1,15 @@
-export const calculateDPS = (data) => {
+import Config from "../models/Config.js";
+
+export const calculateDPS = async (data) => {
+  const weights = await Config.findOne();
+
   return (
-    0.3 * data.cropQuality +
-    0.25 * data.demand +
-    0.2 * data.price -
-    0.15 * data.weatherRisk -
-    0.1 * data.distance +
-    0.1 * data.transportAvailability
+    weights.cropQuality * data.cropQuality +
+    weights.demand * data.demand +
+    weights.price * data.price -
+    weights.weatherRisk * data.weatherRisk -
+    weights.distance * data.distance +
+    weights.transportAvailability * data.transportAvailability -
+    weights.storageAvailability * data.storageAvailability 
   );
 };

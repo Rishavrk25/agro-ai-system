@@ -8,11 +8,15 @@ const shipmentSchema = new mongoose.Schema(
     weatherRisk: { type: Number, required: true },
     transportAvailability: { type: Number, required: true },
     distance: { type: Number, required: true },
+    storageAvailability: { type: Number, required: true },
 
     dps: { type: Number },
-    decision: { type: String }
+    decision: { type: String },
+    explanation: { type: String }
   },
   { timestamps: true }
+
+  
 );
 
 export default mongoose.model("Shipment", shipmentSchema);

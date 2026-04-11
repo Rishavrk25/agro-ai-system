@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import shipmentRoutes from './routes/shipmentRoutes.js';
+import { calculateDPS } from './services/dpsService.js';
+import { getDecision } from './services/decisionService.js';
 
 const app = express();
 dotenv.config();
@@ -44,3 +46,12 @@ app.get('/', (req, res) => {
 // Routes
 app.use("/api/shipments", shipmentRoutes);
 
+// simulation
+app.post("/api/simulate", async (req, res) => {
+  const data = req.body;
+
+  const dps = await calculateDPS(data);
+  const decision = getDecision(dps);
+
+  res.json({ dps, decision });
+});
