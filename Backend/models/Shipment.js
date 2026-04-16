@@ -9,6 +9,7 @@ const shipmentSchema = new mongoose.Schema(
     transportAvailability: { type: Number, required: true },
     distance: { type: Number, required: true },
     storageAvailability: { type: Number, required: true },
+    city: {type:String, required:true},
 
     dps: { type: Number },
     decision: { type: String },

@@ -1,41 +1,34 @@
 import Shipment from "../models/Shipment.js";
 import { calculateDPS } from "../services/dpsService.js";
-import { getDecision } from "../services/decisionService.js";
 import { predictPrice, predictDemand } from "../services/predictionService.js";
 import { errorResponse, successResponse } from "../utils/response.js";
+import { getExplanation } from "../services/explainationService.js";
+import { getWeatherRisk } from "../services/weatherService.js";
 
 export const createShipment = async (req, res) => {
   try {
     const data = req.body;
 
+    // REAL WEATHER RISK
+    const weatherRisk = await getWeatherRisk(data.city || "Delhi");
+    const updatedData = {
+      ...data,
+      weatherRisk,
+    };
+    
+
     //-----------------------Explaination-----------------------
-    const reason = [];
-    if (data.weatherRisk > 60) {
-      reason.push("High weather risk");
-    }
-    if (data.price > 50) {
-      reason.push("Good market price");
-    }
-    if (data.demand > 60) {
-      reason.push("High demand");
-    }
-    if (data.storageAvailability < 30) {
-      reason.push("Low storage availability");
-    }
-    if (data.storageAvailability > 70) {
-      reason.push("Sufficient storage available");
-    }
-    const explanation = reason.join(", ");
+    const explanation = getExplanation(updatedData);
     // --------------------------------------------------------------
 
     // 🔹 Scenario 1: NOW
-    const dpsNow = await calculateDPS(data);
+    const dpsNow = await calculateDPS(updatedData);
 
     // 🔹 Scenario 2: FUTURE
     const futureData = {
-      ...data,
-      price: predictPrice(data),
-      demand: predictDemand(data),
+      ...updatedData,
+      price: predictPrice(updatedData),
+      demand: predictDemand(updatedData),
     };
 
     const dpsLater = await calculateDPS(futureData);
@@ -44,7 +37,7 @@ export const createShipment = async (req, res) => {
     const decision = dpsNow > dpsLater ? "Transport Now" : "Delay Shipment";
 
     const shipment = await Shipment.create({
-      ...data,
+      ...updatedData,
       dps: Math.max(dpsNow, dpsLater),
       decision,
       explanation,
@@ -54,7 +47,7 @@ export const createShipment = async (req, res) => {
     const io = req.app.get("io");
     io.emit("shipmentCreated", shipment);
     //--------------------------------------------------------------
-    
+
     return successResponse(
       res,
       {
