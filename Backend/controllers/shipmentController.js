@@ -4,38 +4,56 @@ import { predictPrice, predictDemand } from "../services/predictionService.js";
 import { errorResponse, successResponse } from "../utils/response.js";
 import { getExplanation } from "../services/explainationService.js";
 import { getWeatherRisk } from "../services/weatherService.js";
+import { getCoordinates } from "../utils/geocode.js";
 
 export const createShipment = async (req, res) => {
   try {
-    const data = req.body;
+    const { village, district, state, ...rest } = req.body;
 
-    // REAL WEATHER RISK
-    const weatherRisk = await getWeatherRisk(data.city || "Delhi");
+    // 🔥 Step 1: Convert village → lat/lng
+    const coords = await getCoordinates(village, district, state);
+    if (!coords) {
+      return errorResponse(res, "Invalid location", "Geocoding failed", 400);
+    }
+    const data = {
+      ...rest,
+      location: {
+        village,
+        district,
+        state,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      },
+    };
+
+    // 🔹 Step 2: Run independent operations in parallel
+    const [weatherRisk, explanation] = await Promise.all([
+      getWeatherRisk(coords.latitude, coords.longitude),
+      Promise.resolve(getExplanation(data)), // wrap sync function
+    ]);
+
     const updatedData = {
       ...data,
       weatherRisk,
     };
-    
 
-    //-----------------------Explaination-----------------------
-    const explanation = getExplanation(updatedData);
-    // --------------------------------------------------------------
-
-    // 🔹 Scenario 1: NOW
-    const dpsNow = await calculateDPS(updatedData);
-
-    // 🔹 Scenario 2: FUTURE
+    // 🔹 Step 3: Prepare future scenario data
     const futureData = {
       ...updatedData,
       price: predictPrice(updatedData),
       demand: predictDemand(updatedData),
     };
 
-    const dpsLater = await calculateDPS(futureData);
+    // 🔹 Step 4: Calculate DPS for both scenarios in parallel
+    const [dpsNow, dpsLater] = await Promise.all([
+      calculateDPS(updatedData),
+      calculateDPS(futureData),
+    ]);
 
-    // 🔹 Final Decision
+    // 🔹 Step 5: Final Decision
     const decision = dpsNow > dpsLater ? "Transport Now" : "Delay Shipment";
 
+    // 🔹 Step 6: Create shipment in database
     const shipment = await Shipment.create({
       ...updatedData,
       dps: Math.max(dpsNow, dpsLater),
@@ -43,11 +61,11 @@ export const createShipment = async (req, res) => {
       explanation,
     });
 
-    //-------------------Emit real-time update----------------------
+    // 🔹 Step 7: Emit real-time update (non-blocking)
     const io = req.app.get("io");
     io.emit("shipmentCreated", shipment);
-    //--------------------------------------------------------------
 
+    // 🔹 Step 8: Return success response
     return successResponse(
       res,
       {
@@ -61,7 +79,7 @@ export const createShipment = async (req, res) => {
       201,
     );
   } catch (err) {
-    return errorResponse(res, "Failed to create shipment", err.message, 400);
+    return errorResponse(res, "Failed to create shipment", err.message, 500);
   }
 };
 
