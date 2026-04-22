@@ -1,10 +1,16 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api"
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
 });
 
-export const createShipment = (data) => API.post("/shipments", data);
+export const recommendMandi = (data, maxRadius) =>
+  API.post(
+    `/shipments/recommend-mandi${maxRadius ? `?maxRadius=${maxRadius}` : ""}`,
+    data,
+  );
 
-export const getRankedShipments = () =>
-  API.get("/shipments/ranked");
+export const confirmMandi = (data) =>
+  API.post("/shipments/confirm-mandi", data);
+
+export default API;

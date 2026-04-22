@@ -1,15 +1,14 @@
-import React, { useEffect } from "react";
-import { socket } from "./services/socket";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
+import Results from "./pages/Results";
 
-const App = () => {
-
-  useEffect(() => {
-    socket.on("shipmentCreated", (data) => {
-      console.log("New shipment:", data);
-    });
-  }, []);
-
-  return <div>App</div>;
-};
-
-export default App;
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/results" element={<Results />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}

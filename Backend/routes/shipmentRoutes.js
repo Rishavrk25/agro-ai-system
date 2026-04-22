@@ -1,11 +1,12 @@
 import express from "express";
-import { createShipment } from "../controllers/shipmentController.js";
-import { getRankedShipments } from "../controllers/shipmentController.js";
-import { getWeatherRisk } from "../services/weatherService.js";
+import { recommendMandi, confirmMandi } from "../controllers/mandiController.js";
+
 
 const router = express.Router();
 
-router.post("/", createShipment);
-router.get("/ranked", getRankedShipments);
+router.post("/recommend-mandi", recommendMandi);
+router.post("/confirm-mandi", confirmMandi);
+
+
 
 export default router;
