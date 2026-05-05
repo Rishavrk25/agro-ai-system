@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { Slider } from "@/components/ui/Slider";
-import { MapPin, Wheat, Truck, Warehouse, Scale, Search, Loader2, ChevronRight } from "lucide-react";
+import { MapPin, Wheat, Truck, Warehouse, Scale, Search, Loader2, ChevronRight, Navigation } from "lucide-react";
 
 const INDIAN_STATES = [
   "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh",
@@ -43,7 +44,7 @@ const STORAGE_OPTIONS = [
   { value: "none", label: "No Storage", labelHindi: "कोई भंडारण नहीं" },
 ];
 
-function SectionCard({ icon, title, titleHindi, color = "#16a34a", children }) {
+function SectionCard({ icon, title, titleHindi, color = "#16a34a", action, children }) {
   return (
     <div style={{
       background: "white", borderRadius: "20px",
@@ -67,6 +68,7 @@ function SectionCard({ icon, title, titleHindi, color = "#16a34a", children }) {
           <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#0f1f0f", margin: 0 }}>{title}</h3>
           <p style={{ fontSize: "12px", color: "#9ca3af", margin: 0, fontFamily: "'Noto Sans Devanagari', sans-serif" }}>{titleHindi}</p>
         </div>
+        {action && <div style={{ marginLeft: "auto" }}>{action}</div>}
       </div>
       <div style={{ padding: "20px 24px" }}>
         {children}
@@ -78,11 +80,48 @@ function SectionCard({ icon, title, titleHindi, color = "#16a34a", children }) {
 export function MandiRecommendationForm() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
   const [formData, setFormData] = useState({
     village: "", district: "", state: "", commodity: "",
     cropQuality: "B", transportAvailability: "rental",
     storageAvailability: "available", quantity: 10, maxRadius: 100,
   });
+
+  const handleDetectLocation = () => {
+    if ("geolocation" in navigator) {
+      setIsDetecting(true);
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          try {
+            const res = await axios.get(`http://localhost:5000/api/location/reverse?lat=${lat}&lon=${lon}`);
+            if (res.data.success) {
+              const { village, district, state } = res.data.data;
+              setFormData(prev => ({
+                ...prev,
+                village: village || prev.village,
+                district: district || prev.district,
+                state: state || prev.state
+              }));
+            }
+          } catch (error) {
+            console.error("Failed to reverse geocode:", error);
+            alert("Could not automatically determine exact village/district.");
+          } finally {
+            setIsDetecting(false);
+          }
+        },
+        (err) => {
+          console.error(err);
+          alert("Location access denied or unavailable.");
+          setIsDetecting(false);
+        }
+      );
+    } else {
+      alert("Geolocation is not supported by your browser.");
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -108,8 +147,30 @@ export function MandiRecommendationForm() {
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {/* Location */}
-      <SectionCard icon={<MapPin style={{ width: "18px", height: "18px" }} />} title="Your Location" titleHindi="अपना स्थान दर्ज करें">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "16px" }}>
+      <SectionCard 
+        icon={<MapPin style={{ width: "18px", height: "18px" }} />} 
+        title="Your Location" 
+        titleHindi="अपना स्थान दर्ज करें"
+        action={
+          <button
+            type="button"
+            onClick={handleDetectLocation}
+            disabled={isDetecting}
+            style={{
+              display: "flex", alignItems: "center", gap: "6px",
+              padding: "8px 12px", borderRadius: "8px",
+              background: "white", border: "1px solid #d1fae5",
+              color: "#16a34a", fontSize: "12px", fontWeight: 600,
+              cursor: isDetecting ? "not-allowed" : "pointer",
+              transition: "all 0.2s"
+            }}
+          >
+            {isDetecting ? <Loader2 style={{ width: "14px", height: "14px", animation: "spin 1s linear infinite" }} /> : <Navigation style={{ width: "14px", height: "14px" }} />}
+            {isDetecting ? "Detecting..." : "Auto-Detect"}
+          </button>
+        }
+      >
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "16px" }}>
           {[
             { field: "village", label: "Village / Town", placeholder: "Enter your village name", required: true },
             { field: "district", label: "District", placeholder: "Enter your district", required: true },
@@ -144,7 +205,7 @@ export function MandiRecommendationForm() {
       {/* Crop Details */}
       <SectionCard icon={<Wheat style={{ width: "18px", height: "18px" }} />} title="Crop Details" titleHindi="फसल की जानकारी" color="#d97706">
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "16px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "16px" }}>
             <div>
               <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151", display: "block", marginBottom: "6px" }}>Commodity / Crop</label>
               <Select
@@ -194,7 +255,7 @@ export function MandiRecommendationForm() {
 
       {/* Transport & Storage */}
       <SectionCard icon={<Truck style={{ width: "18px", height: "18px" }} />} title="Transport & Storage" titleHindi="परिवहन और भंडारण" color="#0284c7">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "16px" }}>
           <div>
             <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151", display: "block", marginBottom: "6px" }}>Transport Availability</label>
             <Select

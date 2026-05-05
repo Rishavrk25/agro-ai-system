@@ -1,21 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { TrendingUp, TrendingDown, Search, Wheat, RefreshCw, BarChart3, Activity } from "lucide-react";
 
-const commodityPrices = [
-  { name: "Wheat", hindi: "गेहूं", price: 2350, change: 2.5, unit: "per quintal", emoji: "🌾" },
-  { name: "Rice", hindi: "चावल", price: 3200, change: -1.2, unit: "per quintal", emoji: "🍚" },
-  { name: "Maize", hindi: "मक्का", price: 1850, change: 3.8, unit: "per quintal", emoji: "🌽" },
-  { name: "Bajra", hindi: "बाजरा", price: 2100, change: 0.5, unit: "per quintal", emoji: "🌿" },
-  { name: "Gram", hindi: "चना", price: 5100, change: -0.8, unit: "per quintal", emoji: "🫘" },
-  { name: "Soybean", hindi: "सोयाबीन", price: 4500, change: 1.5, unit: "per quintal", emoji: "🌱" },
-  { name: "Cotton", hindi: "कपास", price: 6800, change: 2.1, unit: "per quintal", emoji: "☁️" },
-  { name: "Groundnut", hindi: "मूंगफली", price: 5600, change: -1.5, unit: "per quintal", emoji: "🥜" },
-  { name: "Mustard", hindi: "सरसों", price: 4800, change: 0.9, unit: "per quintal", emoji: "🟡" },
-  { name: "Onion", hindi: "प्याज", price: 1500, change: 5.2, unit: "per quintal", emoji: "🧅" },
-  { name: "Potato", hindi: "आलू", price: 1200, change: -2.3, unit: "per quintal", emoji: "🥔" },
-  { name: "Tomato", hindi: "टमाटर", price: 2800, change: 8.5, unit: "per quintal", emoji: "🍅" },
+const defaultCommoditiesInfo = [
+  { name: "Wheat", hindi: "गेहूं", unit: "per quintal", emoji: "🌾" },
+  { name: "Rice", hindi: "चावल", unit: "per quintal", emoji: "🍚" },
+  { name: "Maize", hindi: "मक्का", unit: "per quintal", emoji: "🌽" },
+  { name: "Bajra", hindi: "बाजरा", unit: "per quintal", emoji: "🌿" },
+  { name: "Gram", hindi: "चना", unit: "per quintal", emoji: "🫘" },
+  { name: "Soybean", hindi: "सोयाबीन", unit: "per quintal", emoji: "🌱" },
+  { name: "Cotton", hindi: "कपास", unit: "per quintal", emoji: "☁️" },
+  { name: "Groundnut", hindi: "मूंगफली", unit: "per quintal", emoji: "🥜" },
+  { name: "Mustard", hindi: "सरसों", unit: "per quintal", emoji: "🟡" },
+  { name: "Onion", hindi: "प्याज", unit: "per quintal", emoji: "🧅" },
+  { name: "Potato", hindi: "आलू", unit: "per quintal", emoji: "🥔" },
+  { name: "Tomato", hindi: "टमाटर", unit: "per quintal", emoji: "🍅" },
 ];
 
 function StatCard({ icon, value, label, color, bg }) {
@@ -48,17 +49,47 @@ function StatCard({ icon, value, label, color, bg }) {
 export default function Prices() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pricesData, setPricesData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = commodityPrices.filter(c =>
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.hindi.includes(searchTerm)
-  );
-  const topGainers = commodityPrices.filter(c => c.change > 0).sort((a, b) => b.change - a.change).slice(0, 3);
-  const topLosers = commodityPrices.filter(c => c.change < 0).sort((a, b) => a.change - b.change).slice(0, 3);
+  const fetchPrices = async () => {
+    setIsRefreshing(true);
+    try {
+      const res = await axios.get("http://localhost:5000/api/prices");
+      if (res.data.success) {
+        const fetchedPrices = res.data.data.prices;
+        const merged = fetchedPrices.map(fp => {
+          const info = defaultCommoditiesInfo.find(i => i.name === fp.name);
+          return {
+            ...fp,
+            hindi: info?.hindi || "",
+            unit: info?.unit || "per quintal",
+            emoji: info?.emoji || "📦"
+          };
+        });
+        setPricesData(merged);
+      }
+    } catch (error) {
+      console.error("Failed to fetch prices:", error);
+    } finally {
+      setIsRefreshing(false);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPrices();
+  }, []);
 
   const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 1200);
+    fetchPrices();
   };
+
+  const filtered = pricesData.filter(c =>
+    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.hindi.includes(searchTerm)
+  );
+  const topGainers = [...pricesData].filter(c => c.change > 0).sort((a, b) => b.change - a.change).slice(0, 3);
+  const topLosers = [...pricesData].filter(c => c.change < 0).sort((a, b) => a.change - b.change).slice(0, 3);
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", flexDirection: "column" }}>
@@ -68,12 +99,18 @@ export default function Prices() {
         <section style={{
           position: "relative", overflow: "hidden",
           padding: "56px 0 48px",
-          background: "linear-gradient(135deg, #0c4a6e 0%, #075985 40%, #0284c7 100%)",
+          background: "linear-gradient(135deg, #052e16 0%, #14532d 40%, #16a34a 100%)",
           backgroundSize: "200% 200%", animation: "gradient-shift 8s ease infinite",
         }}>
           <div style={{
             position: "absolute", top: "-60px", right: "-60px", width: "300px", height: "300px",
             borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)", pointerEvents: "none",
+          }} />
+          <div style={{
+            position: "absolute", bottom: "-40px", left: "10%",
+            width: "200px", height: "200px", borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(234,179,8,0.08) 0%, transparent 70%)",
+            pointerEvents: "none",
           }} />
           <div style={{
             position: "absolute", inset: 0,
@@ -83,8 +120,8 @@ export default function Prices() {
           <div className="container" style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
             <div style={{
               display: "inline-flex", alignItems: "center", gap: "8px", padding: "6px 16px",
-              borderRadius: "999px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(186,230,253,0.3)",
-              color: "#bae6fd", fontSize: "13px", fontWeight: 600, marginBottom: "16px",
+              borderRadius: "999px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(134,239,172,0.3)",
+              color: "#86efac", fontSize: "13px", fontWeight: 600, marginBottom: "16px",
             }}>
               <Activity style={{ width: "13px", height: "13px" }} />
               Live Market Data
@@ -95,7 +132,7 @@ export default function Prices() {
             }}>
               Today's Market Prices
             </h1>
-            <p style={{ fontSize: "18px", color: "rgba(186,230,253,0.85)", fontFamily: "'Noto Sans Devanagari', sans-serif", fontWeight: 600, marginBottom: "8px" }}>
+            <p style={{ fontSize: "18px", color: "rgba(134,239,172,0.85)", fontFamily: "'Noto Sans Devanagari', sans-serif", fontWeight: 600, marginBottom: "8px" }}>
               आज के बाजार भाव
             </p>
             <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.65)", maxWidth: "500px", margin: "0 auto" }}>
@@ -143,10 +180,10 @@ export default function Prices() {
 
             {/* Stat Cards */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "16px", marginBottom: "32px" }}>
-              <StatCard icon={<Wheat style={{ width: "22px", height: "22px" }} />} value={commodityPrices.length} label="Total Commodities" color="#16a34a" bg="rgba(22,163,74,0.08)" />
-              <StatCard icon={<TrendingUp style={{ width: "22px", height: "22px" }} />} value={commodityPrices.filter(c => c.change > 0).length} label="Price Rising ↑" color="#16a34a" bg="rgba(22,163,74,0.08)" />
-              <StatCard icon={<TrendingDown style={{ width: "22px", height: "22px" }} />} value={commodityPrices.filter(c => c.change < 0).length} label="Price Falling ↓" color="#dc2626" bg="rgba(220,38,38,0.08)" />
-              <StatCard icon={<RefreshCw style={{ width: "22px", height: "22px" }} />} value="Live" label="Data Status" color="#0284c7" bg="rgba(2,132,199,0.08)" />
+              <StatCard icon={<Wheat style={{ width: "22px", height: "22px" }} />} value={pricesData.length} label="Total Commodities" color="#16a34a" bg="rgba(22,163,74,0.08)" />
+              <StatCard icon={<TrendingUp style={{ width: "22px", height: "22px" }} />} value={pricesData.filter(c => c.change > 0).length} label="Price Rising ↑" color="#16a34a" bg="rgba(22,163,74,0.08)" />
+              <StatCard icon={<TrendingDown style={{ width: "22px", height: "22px" }} />} value={pricesData.filter(c => c.change < 0).length} label="Price Falling ↓" color="#dc2626" bg="rgba(220,38,38,0.08)" />
+              <StatCard icon={<RefreshCw style={{ width: "22px", height: "22px" }} />} value={loading ? "Loading..." : "Live"} label="Data Status" color="#0284c7" bg="rgba(2,132,199,0.08)" />
             </div>
 
             {/* Gainers / Losers */}

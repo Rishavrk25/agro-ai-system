@@ -152,23 +152,33 @@ export const recommendMandi = async (req, res) => {
     );
     // console.log(weatherRisk);
 
+    // ── Mappings for DPS and Transport Calculations ──────────────
+    const transportMapping = { own: 100, rental: 80, limited: 40, none: 0 };
+    const numTransportAvailability = transportMapping[transportAvailability] ?? 50;
+
+    const storageMapping = { available: 100, limited: 50, none: 0 };
+    const numStorageAvailability = storageMapping[storageAvailability] ?? 50;
+
+    const qualityMapping = { A: 100, B: 80, C: 50, D: 20 };
+    const numCropQuality = qualityMapping[cropQuality] ?? 50;
+
     // ── Step 6: Calculate DPS + net profit for each mandi ──────────
     const evaluationPromises = geocodedMandis.map(async (mandi) => {
       const modalPrice = Number(mandi.modal_price);
       const transportCost = calculateTransportCost(
         mandi.distanceKm,
-        transportAvailability,
+        numTransportAvailability,
       );
 
       // Map mandi data → DPS input format
       const dpsInput = {
-        cropQuality,
+        cropQuality: numCropQuality,
         demand: Math.min(modalPrice / 25, 100), // Normalize price → demand proxy (0-100)
         price: modalPrice,
         weatherRisk,
         distance: mandi.distanceKm,
-        transportAvailability,
-        storageAvailability,
+        transportAvailability: numTransportAvailability,
+        storageAvailability: numStorageAvailability,
       };
 
       // Future scenario: predicted price & demand

@@ -279,7 +279,7 @@ export function HeroSection() {
           className="animate-fade-in-up delay-600"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
             gap: "16px",
             maxWidth: "900px",
             margin: "64px auto 0",

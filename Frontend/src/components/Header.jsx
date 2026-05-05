@@ -44,6 +44,16 @@ export function Header() {
           : "none",
       }}
     >
+      <style>{`
+        .desktop-nav { display: none !important; }
+        .mobile-menu-btn { display: flex !important; }
+        .mobile-menu-dropdown { display: block !important; }
+        @media (min-width: 768px) {
+          .desktop-nav { display: flex !important; }
+          .mobile-menu-btn { display: none !important; }
+          .mobile-menu-dropdown { display: none !important; }
+        }
+      `}</style>
       <div className="container mx-auto px-4" style={{ display: "flex", height: "68px", alignItems: "center", justifyContent: "space-between" }}>
         {/* Logo */}
         <Link to="/" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}>
@@ -82,7 +92,7 @@ export function Header() {
         </Link>
 
         {/* Desktop Nav */}
-        <nav style={{ display: "flex", alignItems: "center", gap: "4px" }} className="hidden md:flex">
+        <nav style={{ alignItems: "center", gap: "4px" }} className="desktop-nav">
           {navLinks.map((link) => (
             <Link
               key={link.to}
@@ -117,7 +127,7 @@ export function Header() {
         </nav>
 
         {/* CTA Buttons */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }} className="hidden md:flex">
+        <div style={{ alignItems: "center", gap: "10px" }} className="desktop-nav">
           <button
             style={{
               display: "flex",
@@ -192,7 +202,7 @@ export function Header() {
             cursor: "pointer",
             transition: "all 0.2s ease",
           }}
-          className="md:hidden"
+          className="mobile-menu-btn"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
         >
@@ -210,7 +220,7 @@ export function Header() {
             padding: "16px",
             animation: "fadeInDown 0.25s ease",
           }}
-          className="md:hidden"
+          className="mobile-menu-dropdown"
         >
           <nav style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             {navLinks.map((link) => (

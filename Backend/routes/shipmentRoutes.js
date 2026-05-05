@@ -7,6 +7,4 @@ const router = express.Router();
 router.post("/recommend-mandi", recommendMandi);
 router.post("/confirm-mandi", confirmMandi);
 
-
-
 export default router;

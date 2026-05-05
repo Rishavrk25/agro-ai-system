@@ -3,6 +3,9 @@ import cors from "cors";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import shipmentRoutes from "./routes/shipmentRoutes.js";
+import weatherRoutes from "./routes/weatherRoutes.js";
+import priceRoutes from "./routes/priceRoutes.js";
+import locationRoutes from "./routes/locationRoutes.js";
 import { Server } from "socket.io";
 import http from "http";
 import { simulate } from "./controllers/simulationController.js";
@@ -42,6 +45,9 @@ app.get("/", (req, res) => {
 
 // Routes
 app.use("/api/shipments", shipmentRoutes);
+app.use("/api/weather", weatherRoutes);
+app.use("/api/prices", priceRoutes);
+app.use("/api/location", locationRoutes);
 
 // simulation
 app.post("/api/simulate", simulate);

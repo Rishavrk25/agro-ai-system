@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import {
   CloudSun, Search, Droplets, Wind, Thermometer, Sun, Cloud, CloudRain,
-  MapPin, AlertTriangle, CheckCircle, Eye
+  MapPin, AlertTriangle, CheckCircle, Eye, Navigation
 } from "lucide-react";
 
-const currentWeather = { location: "New Delhi", temperature: 32, condition: "Partly Cloudy", humidity: 65, windSpeed: 12, rainfall: 0, uvIndex: 7 };
+const defaultCurrentWeather = { location: "New Delhi", temperature: 32, condition: "Partly Cloudy", humidity: 65, windSpeed: 12, rainfall: 0, uvIndex: 7 };
 
-const forecast = [
+const defaultForecast = [
   { day: "Today", high: 34, low: 24, condition: "sunny", rain: 10 },
   { day: "Tomorrow", high: 33, low: 23, condition: "cloudy", rain: 20 },
   { day: "Wed", high: 31, low: 22, condition: "rainy", rain: 70 },
@@ -17,6 +18,26 @@ const forecast = [
   { day: "Sat", high: 33, low: 24, condition: "sunny", rain: 5 },
   { day: "Sun", high: 34, low: 25, condition: "sunny", rain: 0 },
 ];
+
+function mapWeatherCondition(id) {
+  if (id >= 200 && id < 600) return "rainy";
+  if (id >= 700 && id < 800) return "cloudy";
+  if (id === 800) return "sunny";
+  if (id > 800) return "cloudy";
+  return "cloudy";
+}
+
+function formatDay(dateString) {
+  const date = new Date(dateString);
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  if (date.toDateString() === today.toDateString()) return "Today";
+  if (date.toDateString() === tomorrow.toDateString()) return "Tomorrow";
+  
+  return date.toLocaleDateString("en-US", { weekday: "short" });
+}
 
 const farmingAdvice = [
   {
@@ -60,7 +81,97 @@ function getRainColor(rain) {
 }
 
 export default function Weather() {
-  const [location, setLocation] = useState(currentWeather.location);
+  const [location, setLocation] = useState("Delhi");
+  const [currentWeather, setCurrentWeather] = useState(defaultCurrentWeather);
+  const [forecast, setForecast] = useState(defaultForecast);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchWeather = async (city, lat = null, lon = null) => {
+    if (!city && (!lat || !lon)) return;
+    setLoading(true);
+    setError(null);
+    try {
+      let url = `http://localhost:5000/api/weather?`;
+      if (lat && lon) {
+        url += `lat=${lat}&lon=${lon}`;
+      } else {
+        url += `city=${city}`;
+      }
+      const res = await axios.get(url);
+      if (res.data.success) {
+        const current = res.data.current;
+        const forecastData = res.data.forecast.list;
+        
+        setLocation(current.name); // update input field just in case
+        
+        setCurrentWeather({
+          location: current.name,
+          temperature: Math.round(current.main.temp),
+          condition: current.weather[0].description.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+          iconCondition: mapWeatherCondition(current.weather[0].id),
+          humidity: current.main.humidity,
+          windSpeed: Math.round(current.wind.speed * 3.6), // m/s to km/h
+          rainfall: current.rain && current.rain["1h"] ? current.rain["1h"] : 0,
+          uvIndex: 5, // mock UV index as free tier doesn't provide it
+        });
+
+        // Group forecast by day (taking one forecast per day, e.g. at 12:00 PM)
+        const dailyForecasts = {};
+        forecastData.forEach(item => {
+          const date = item.dt_txt.split(" ")[0];
+          if (!dailyForecasts[date]) {
+            dailyForecasts[date] = item;
+          } else if (item.dt_txt.includes("12:00:00")) {
+            dailyForecasts[date] = item; // Prefer noon time for forecast
+          }
+        });
+        
+        const next7Days = Object.values(dailyForecasts).slice(0, 7).map(item => {
+          return {
+            day: formatDay(item.dt_txt),
+            high: Math.round(item.main.temp_max),
+            low: Math.round(item.main.temp_min),
+            condition: mapWeatherCondition(item.weather[0].id),
+            rain: item.pop ? Math.round(item.pop * 100) : 0
+          };
+        });
+        
+        setForecast(next7Days);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch weather data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  const handleSearch = () => {
+    fetchWeather(location);
+  };
+
+  const handleDetectLocation = () => {
+    if ("geolocation" in navigator) {
+      setLoading(true);
+      setError(null);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          fetchWeather(null, lat, lon);
+        },
+        (err) => {
+          console.error(err);
+          setError("Location access denied or unavailable.");
+          setLoading(false);
+        }
+      );
+    } else {
+      setError("Geolocation is not supported by your browser.");
+    }
+  };
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", flexDirection: "column" }}>
@@ -70,12 +181,18 @@ export default function Weather() {
         <section style={{
           position: "relative", overflow: "hidden",
           padding: "56px 0 48px",
-          background: "linear-gradient(135deg, #0c4a6e 0%, #1e3a5f 40%, #2563eb 100%)",
+          background: "linear-gradient(135deg, #052e16 0%, #14532d 40%, #16a34a 100%)",
           backgroundSize: "200% 200%", animation: "gradient-shift 8s ease infinite",
         }}>
           <div style={{
             position: "absolute", top: "-40px", right: "-40px", width: "280px", height: "280px",
             borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%)", pointerEvents: "none",
+          }} />
+          <div style={{
+            position: "absolute", bottom: "-40px", left: "10%",
+            width: "200px", height: "200px", borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(234,179,8,0.08) 0%, transparent 70%)",
+            pointerEvents: "none",
           }} />
           {/* Floating weather icons */}
           <div style={{ position: "absolute", top: "20px", left: "8%", opacity: 0.12, animation: "float 4s ease-in-out infinite" }}>
@@ -93,8 +210,8 @@ export default function Weather() {
           <div className="container" style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
             <div style={{
               display: "inline-flex", alignItems: "center", gap: "8px", padding: "6px 16px",
-              borderRadius: "999px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(186,230,253,0.3)",
-              color: "#bae6fd", fontSize: "13px", fontWeight: 600, marginBottom: "16px",
+              borderRadius: "999px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(134,239,172,0.3)",
+              color: "#86efac", fontSize: "13px", fontWeight: 600, marginBottom: "16px",
             }}>
               <CloudSun style={{ width: "13px", height: "13px" }} />
               Agricultural Weather Intelligence
@@ -105,7 +222,7 @@ export default function Weather() {
             }}>
               Weather Forecast
             </h1>
-            <p style={{ fontSize: "18px", color: "rgba(186,230,253,0.85)", fontFamily: "'Noto Sans Devanagari', sans-serif", fontWeight: 600, marginBottom: "8px" }}>
+            <p style={{ fontSize: "18px", color: "rgba(134,239,172,0.85)", fontFamily: "'Noto Sans Devanagari', sans-serif", fontWeight: 600, marginBottom: "8px" }}>
               मौसम का पूर्वानुमान
             </p>
             <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.65)", maxWidth: "500px", margin: "0 auto" }}>
@@ -130,32 +247,58 @@ export default function Weather() {
                     fontSize: "15px", color: "#0f1f0f", outline: "none",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.04)", transition: "border-color 0.2s",
                   }}
-                  onFocus={e => e.target.style.borderColor = "#2563eb"}
+                  onFocus={e => e.target.style.borderColor = "#16a34a"}
                   onBlur={e => e.target.style.borderColor = "#d1fae5"}
+                  onKeyDown={e => e.key === 'Enter' && handleSearch()}
                 />
               </div>
               <button
+                onClick={handleDetectLocation}
+                disabled={loading}
+                title="Detect My Location"
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  width: "48px", height: "48px", borderRadius: "14px",
+                  background: "white", border: "1.5px solid #d1fae5",
+                  color: "#16a34a", cursor: loading ? "not-allowed" : "pointer",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.04)", transition: "all 0.2s ease",
+                  flexShrink: 0
+                }}
+                onMouseEnter={e => { if (!loading) { e.currentTarget.style.borderColor = "#16a34a"; e.currentTarget.style.transform = "translateY(-2px)"; } }}
+                onMouseLeave={e => { if (!loading) { e.currentTarget.style.borderColor = "#d1fae5"; e.currentTarget.style.transform = "translateY(0)"; } }}
+              >
+                <Navigation style={{ width: "20px", height: "20px" }} />
+              </button>
+              <button
+                onClick={handleSearch}
+                disabled={loading}
                 style={{
                   display: "flex", alignItems: "center", gap: "8px", padding: "12px 24px",
-                  borderRadius: "14px", background: "linear-gradient(135deg, #1d4ed8, #2563eb)",
-                  color: "white", fontSize: "15px", fontWeight: 600, cursor: "pointer",
-                  border: "none", boxShadow: "0 4px 12px rgba(37,99,235,0.3)", transition: "all 0.2s ease",
+                  borderRadius: "14px", background: loading ? "#9ca3af" : "linear-gradient(135deg, #15803d, #16a34a)",
+                  color: "white", fontSize: "15px", fontWeight: 600, cursor: loading ? "not-allowed" : "pointer",
+                  border: "none", boxShadow: loading ? "none" : "0 4px 12px rgba(22,163,74,0.3)", transition: "all 0.2s ease",
                 }}
-                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(37,99,235,0.4)"; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(37,99,235,0.3)"; }}
+                onMouseEnter={e => { if (!loading) { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(22,163,74,0.4)"; } }}
+                onMouseLeave={e => { if (!loading) { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(22,163,74,0.3)"; } }}
               >
                 <Search style={{ width: "16px", height: "16px" }} />
-                Get Weather
+                {loading ? "Searching..." : "Get Weather"}
               </button>
             </div>
+
+            {error && (
+              <div style={{ textAlign: "center", color: "#ef4444", marginBottom: "24px", background: "#fef2f2", padding: "12px", borderRadius: "12px" }}>
+                {error}
+              </div>
+            )}
 
             {/* Current Weather Card */}
             <div style={{ maxWidth: "800px", margin: "0 auto 40px" }}>
               <div style={{
-                background: "linear-gradient(135deg, #1e3a8a, #1d4ed8, #2563eb)",
+                background: "linear-gradient(135deg, #052e16, #14532d, #16a34a)",
                 borderRadius: "24px",
                 padding: "32px",
-                boxShadow: "0 12px 40px rgba(37,99,235,0.3)",
+                boxShadow: "0 12px 40px rgba(22,163,74,0.3)",
                 color: "white",
                 position: "relative",
                 overflow: "hidden",
@@ -172,7 +315,7 @@ export default function Weather() {
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "8px" }}>
                       <span style={{ fontSize: "72px", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1 }}>{currentWeather.temperature}°</span>
-                      <WeatherIcon condition="cloudy" size={56} />
+                      <WeatherIcon condition={currentWeather.iconCondition || "cloudy"} size={56} />
                     </div>
                     <p style={{ fontSize: "18px", opacity: 0.8 }}>{currentWeather.condition}</p>
                   </div>
@@ -206,12 +349,12 @@ export default function Weather() {
                   <div
                     key={day.day}
                     style={{
-                      background: i === 0 ? "linear-gradient(135deg, #1d4ed8, #2563eb)" : "white",
+                      background: i === 0 ? "linear-gradient(135deg, #15803d, #16a34a)" : "white",
                       borderRadius: "18px",
                       padding: "18px 12px",
                       textAlign: "center",
                       border: "1px solid rgba(0,0,0,0.06)",
-                      boxShadow: i === 0 ? "0 6px 20px rgba(37,99,235,0.3)" : "0 2px 8px rgba(0,0,0,0.04)",
+                      boxShadow: i === 0 ? "0 6px 20px rgba(22,163,74,0.3)" : "0 2px 8px rgba(0,0,0,0.04)",
                       transition: "all 0.2s ease",
                       color: i === 0 ? "white" : "#0f1f0f",
                     }}

@@ -27,7 +27,7 @@ export default function Results() {
         storageAvailability: data.storageAvailability, quantity: data.quantity,
       };
       const response = await recommendMandi(payload, data.maxRadius);
-      const apiResults = response.data?.recommendations || response.data || [];
+      const apiResults = response.data?.data?.allMandis || response.data?.allMandis || response.data?.recommendations || [];
       const mapped = apiResults.map((item, i) => ({
         rank: i + 1,
         mandiName: item.mandiName || item.mandi || `Mandi ${i + 1}`,

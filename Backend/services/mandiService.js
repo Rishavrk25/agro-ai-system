@@ -72,3 +72,26 @@ export const fetchMandiPrices = async (state, commodity) => {
     throw new Error(`Failed to fetch mandi prices: ${err.message}`);
   }
 };
+
+export const fetchLatestPrices = async (maxRecords = 1000) => {
+  const apiKey = process.env.DATA_GOV_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("DATA_GOV_API_KEY is not configured in .env");
+  }
+
+  try {
+    const response = await axios.get(BASE_URL, {
+      params: {
+        "api-key": apiKey,
+        format: "json",
+        limit: maxRecords,
+      },
+    });
+
+    return response.data.records || [];
+  } catch (err) {
+    console.error("Mandi API error:", err.message);
+    throw new Error(`Failed to fetch latest prices: ${err.message}`);
+  }
+};
