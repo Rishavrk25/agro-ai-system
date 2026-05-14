@@ -1,4 +1,4 @@
-import { MapPin, TrendingUp, TrendingDown, Truck, Clock, ArrowRight, Trophy, Star, CheckCircle } from "lucide-react";
+import { MapPin, TrendingUp, Clock, ArrowRight, Trophy, Star, CheckCircle, IndianRupee } from "lucide-react";
 
 export function MandiResultCard({ mandi, quantity, commodity, isSelected, onSelect }) {
   const isTopRecommendation = mandi.rank === 1;
@@ -10,17 +10,10 @@ export function MandiResultCard({ mandi, quantity, commodity, isSelected, onSele
         background: "white",
         borderRadius: "20px",
         overflow: "hidden",
-        border: isSelected
-          ? "2px solid #16a34a"
-          : isTopRecommendation
-            ? "1.5px solid rgba(22,163,74,0.3)"
-            : "1px solid rgba(0,0,0,0.07)",
-        boxShadow: isSelected
-          ? "0 8px 30px rgba(22,163,74,0.2)"
-          : "0 4px 16px rgba(0,0,0,0.05)",
-        transition: "all 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
+        border: isSelected ? "2px solid #16a34a" : isTopRecommendation ? "1.5px solid rgba(22,163,74,0.3)" : "1px solid rgba(0,0,0,0.07)",
+        boxShadow: isSelected ? "0 8px 30px rgba(22,163,74,0.2)" : "0 4px 16px rgba(0,0,0,0.05)",
+        transition: "all 0.3s ease",
         cursor: "default",
-        position: "relative",
       }}
       onMouseEnter={e => {
         if (!isSelected) {
@@ -35,172 +28,89 @@ export function MandiResultCard({ mandi, quantity, commodity, isSelected, onSele
         }
       }}
     >
-      {/* Card Header */}
+      {/* Simple Header */}
       <div style={{
         padding: "16px 20px",
-        background: isTopRecommendation
-          ? "linear-gradient(135deg, #052e16, #15803d)"
-          : isSelected
-            ? "linear-gradient(135deg, #f0fdf4, #dcfce7)"
-            : "#fafafa",
+        background: isTopRecommendation ? "linear-gradient(135deg, #052e16, #15803d)" : isSelected ? "#f0fdf4" : "#fafafa",
         borderBottom: "1px solid rgba(0,0,0,0.05)",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
+        display: "flex", alignItems: "flex-start", justifyContent: "space-between",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", gap: "12px" }}>
           <div style={{
-            width: "44px", height: "44px", borderRadius: "12px",
-            background: isTopRecommendation
-              ? "rgba(255,255,255,0.15)"
-              : isSelected
-                ? "rgba(22,163,74,0.12)"
-                : "#f3f4f6",
+            width: "40px", height: "40px", borderRadius: "10px",
+            background: isTopRecommendation ? "rgba(255,255,255,0.2)" : "#e5e7eb",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontWeight: 800, fontSize: "14px",
-            color: isTopRecommendation ? "white" : isSelected ? "#16a34a" : "#9ca3af",
-            flexShrink: 0,
+            fontWeight: 800, color: isTopRecommendation ? "white" : "#374151"
           }}>
             {isTopRecommendation ? <Trophy style={{ width: "20px", height: "20px" }} /> : `#${mandi.rank}`}
           </div>
           <div>
-            <h3 style={{
-              fontSize: "16px", fontWeight: 700,
-              color: isTopRecommendation ? "white" : "#0f1f0f",
-              letterSpacing: "-0.01em", marginBottom: "3px",
-            }}>
+            <h3 style={{ fontSize: "17px", fontWeight: 700, color: isTopRecommendation ? "white" : "#0f1f0f", marginBottom: "2px" }}>
               {mandi.mandiName}
             </h3>
-            <p style={{
-              fontSize: "12px",
-              color: isTopRecommendation ? "rgba(255,255,255,0.7)" : "#9ca3af",
-              display: "flex", alignItems: "center", gap: "4px",
-            }}>
-              <MapPin style={{ width: "11px", height: "11px" }} />
-              {mandi.district} · {mandi.distanceKm} km away
+            <p style={{ fontSize: "13px", color: isTopRecommendation ? "rgba(255,255,255,0.8)" : "#6b7280", display: "flex", alignItems: "center", gap: "4px" }}>
+              <MapPin style={{ width: "12px", height: "12px" }} /> {mandi.district} ({mandi.distanceKm} km away)
             </p>
           </div>
         </div>
-
-        {isTopRecommendation && (
-          <div style={{
-            padding: "4px 12px", borderRadius: "999px",
-            background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.3)",
-            display: "flex", alignItems: "center", gap: "5px",
-            color: "white", fontSize: "12px", fontWeight: 700,
-            flexShrink: 0,
-          }}>
-            <Star style={{ width: "12px", height: "12px" }} />
-            Best Choice
-          </div>
-        )}
-        {isSelected && !isTopRecommendation && (
-          <div style={{
-            padding: "4px 12px", borderRadius: "999px",
-            background: "rgba(22,163,74,0.1)", border: "1px solid rgba(22,163,74,0.2)",
-            display: "flex", alignItems: "center", gap: "5px",
-            color: "#16a34a", fontSize: "12px", fontWeight: 700, flexShrink: 0,
-          }}>
-            <CheckCircle style={{ width: "12px", height: "12px" }} />
-            Selected
-          </div>
-        )}
       </div>
 
-      {/* Card Body */}
-      <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "14px" }}>
-        {/* Price row */}
-        <div style={{
-          display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
-          background: "#f8fdf8", borderRadius: "14px", overflow: "hidden",
-          border: "1px solid rgba(22,163,74,0.08)",
-        }}>
-          {[
-            { label: "Min Price", value: `₹${mandi.minPrice?.toLocaleString()}`, highlight: false },
-            { label: "Modal Price", value: `₹${mandi.modalPrice?.toLocaleString()}`, highlight: true },
-            { label: "Max Price", value: `₹${mandi.maxPrice?.toLocaleString()}`, highlight: false },
-          ].map((p, i) => (
-            <div key={i} style={{
-              padding: "12px 10px", textAlign: "center",
-              borderLeft: i > 0 ? "1px solid rgba(22,163,74,0.08)" : "none",
-            }}>
-              <p style={{ fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>{p.label}</p>
-              <p style={{ fontSize: p.highlight ? "16px" : "14px", fontWeight: p.highlight ? 800 : 600, color: p.highlight ? "#16a34a" : "#374151" }}>
-                {p.value}
-              </p>
-            </div>
-          ))}
+      <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "16px" }}>
+        
+        {/* Large Net Profit */}
+        <div style={{ textAlign: "center", padding: "16px", background: "#f0fdf4", borderRadius: "12px", border: "1px solid #dcfce7" }}>
+          <p style={{ fontSize: "14px", color: "#166534", fontWeight: 600, marginBottom: "4px" }}>Estimated Net Profit</p>
+          <h2 style={{ fontSize: "28px", fontWeight: 900, color: "#15803d", margin: 0 }}>
+            ₹{mandi.netProfit?.toLocaleString()}
+          </h2>
+          <p style={{ fontSize: "12px", color: "#166534", opacity: 0.8, marginTop: "4px" }}>
+            After ₹{mandi.transportCost?.toLocaleString()} transport cost
+          </p>
         </div>
 
-        {/* Calculations */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "13px", color: "#9ca3af" }}>Gross Value ({quantity} quintals)</span>
-            <span style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>₹{((mandi.modalPrice || 0) * quantity).toLocaleString()}</span>
+        {/* Price Comparison */}
+        <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f3f4f6", paddingBottom: "16px" }}>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: "12px", color: "#6b7280", marginBottom: "2px" }}>Current Price</p>
+            <p style={{ fontSize: "16px", fontWeight: 700, color: "#111827" }}>₹{mandi.modalPrice?.toLocaleString()}/q</p>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "13px", color: "#9ca3af", display: "flex", alignItems: "center", gap: "4px" }}>
-              <Truck style={{ width: "12px", height: "12px" }} /> Transport Cost
-            </span>
-            <span style={{ fontSize: "13px", fontWeight: 600, color: "#dc2626" }}>− ₹{mandi.transportCost?.toLocaleString()}</span>
-          </div>
-          <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", paddingTop: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "14px", fontWeight: 700, color: "#0f1f0f" }}>Net Profit</span>
-            <span style={{ fontSize: "20px", fontWeight: 900, color: "#16a34a", letterSpacing: "-0.02em" }}>₹{mandi.netProfit?.toLocaleString()}</span>
-          </div>
-        </div>
-
-        {/* DPS + Decision */}
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "12px 14px", borderRadius: "14px",
-          background: isDelayRecommended ? "rgba(234,179,8,0.06)" : "rgba(22,163,74,0.06)",
-          border: `1px solid ${isDelayRecommended ? "rgba(234,179,8,0.2)" : "rgba(22,163,74,0.15)"}`,
-        }}>
-          <div>
-            <p style={{ fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>AI Score</p>
-            <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
-              <span style={{ fontSize: "26px", fontWeight: 900, color: isDelayRecommended ? "#d97706" : "#16a34a", letterSpacing: "-0.03em" }}>
-                {mandi.bestDPS}
-              </span>
-              <span style={{ fontSize: "12px", color: "#9ca3af" }}>/ 100</span>
-            </div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: "5px",
-              padding: "5px 12px", borderRadius: "999px",
-              background: isDelayRecommended ? "#fef3c7" : "#dcfce7",
-              color: isDelayRecommended ? "#d97706" : "#16a34a",
-              fontSize: "12px", fontWeight: 700, marginBottom: "4px",
-            }}>
-              {isDelayRecommended
-                ? <><Clock style={{ width: "11px", height: "11px" }} /> Wait for Better Price</>
-                : <><TrendingUp style={{ width: "11px", height: "11px" }} /> Sell Now</>
-              }
-            </div>
-            <p style={{ fontSize: "11px", color: "#9ca3af" }}>
-              {isDelayRecommended ? `Future DPS: ${mandi.dpsLater}` : `Current DPS: ${mandi.dpsNow}`}
+          <div style={{ width: "1px", background: "#f3f4f6", margin: "0 16px" }}></div>
+          <div style={{ flex: 1, textAlign: "right" }}>
+            <p style={{ fontSize: "12px", color: "#6b7280", marginBottom: "2px" }}>Est. Future Price</p>
+            <p style={{ fontSize: "16px", fontWeight: 700, color: "#d97706" }}>
+              {mandi.predictedPrice ? `₹${mandi.predictedPrice?.toLocaleString()}/q` : "N/A"}
             </p>
           </div>
         </div>
 
-        {/* DPS Comparison */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-          {[
-            { icon: <TrendingUp style={{ width: "14px", height: "14px" }} />, label: "Sell Now", value: mandi.dpsNow, active: !isDelayRecommended, color: "#16a34a" },
-            { icon: <Clock style={{ width: "14px", height: "14px" }} />, label: "Wait", value: mandi.dpsLater, active: isDelayRecommended, color: "#d97706" },
-          ].map((d, i) => (
-            <div key={i} style={{
-              padding: "12px", borderRadius: "12px",
-              background: d.active ? `${d.color}10` : "#f8f9fa",
-              border: d.active ? `1px solid ${d.color}25` : "1px solid rgba(0,0,0,0.06)",
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px", color: d.active ? d.color : "#9ca3af" }}>
-                {d.icon}
-                <span style={{ fontSize: "12px", fontWeight: 600, color: d.active ? d.color : "#9ca3af" }}>{d.label}</span>
-              </div>
-              <p style={{ fontSize: "20px", fontWeight: 800, color: d.active ? d.color : "#374151" }}>{d.value}</p>
-            </div>
-          ))}
+        {/* AI Recommendation & DPS */}
+        <div style={{ 
+          padding: "16px", borderRadius: "12px",
+          background: isDelayRecommended ? "#fffbeb" : "#f0fdf4",
+          border: `1px solid ${isDelayRecommended ? "#fde68a" : "#bbf7d0"}`,
+          display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center"
+        }}>
+          <div style={{ 
+            display: "inline-flex", alignItems: "center", gap: "6px", 
+            padding: "6px 14px", borderRadius: "20px", 
+            background: isDelayRecommended ? "#f59e0b" : "#16a34a", 
+            color: "white", fontSize: "14px", fontWeight: 700, marginBottom: "8px"
+          }}>
+            {isDelayRecommended ? <Clock style={{ width: "16px", height: "16px" }} /> : <TrendingUp style={{ width: "16px", height: "16px" }} />}
+            {isDelayRecommended ? "Action: Wait 1 Week" : "Action: Sell Now"}
+          </div>
+          <p style={{ fontSize: "13px", color: "#4b5563", marginBottom: "8px" }}>
+            {isDelayRecommended 
+              ? "Prices are expected to rise. Hold your stock if you have storage." 
+              : "Best time to sell. Transport your crops today."}
+          </p>
+          
+          {/* Subtle DPS Scores */}
+          <div style={{ display: "flex", gap: "12px", fontSize: "11px", color: "#9ca3af", fontWeight: 500, background: "rgba(255,255,255,0.6)", padding: "4px 12px", borderRadius: "6px" }}>
+            <span>DPS Score: {mandi.dpsNow}</span>
+            <span>•</span>
+            <span>Future DPS: {mandi.dpsLater}</span>
+          </div>
         </div>
 
         {/* Select Button */}
@@ -208,33 +118,15 @@ export function MandiResultCard({ mandi, quantity, commodity, isSelected, onSele
           onClick={() => onSelect(mandi)}
           style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-            padding: "13px", borderRadius: "14px", border: "none",
-            background: isSelected
-              ? "linear-gradient(135deg, #15803d, #16a34a)"
-              : "white",
-            color: isSelected ? "white" : "#374151",
-            fontSize: "14px", fontWeight: 700, cursor: "pointer",
-            boxShadow: isSelected
-              ? "0 4px 14px rgba(22,163,74,0.35)"
-              : "0 1px 4px rgba(0,0,0,0.08)",
-            border: isSelected ? "none" : "1.5px solid #e5e7eb",
-            transition: "all 0.2s ease",
-            width: "100%",
+            padding: "14px", borderRadius: "12px", border: "none",
+            background: isSelected ? "linear-gradient(135deg, #15803d, #16a34a)" : "#1f2937",
+            color: "white", fontSize: "15px", fontWeight: 700, cursor: "pointer",
+            transition: "all 0.2s ease", width: "100%", marginTop: "4px"
           }}
-          onMouseEnter={e => {
-            if (!isSelected) {
-              e.currentTarget.style.borderColor = "#86efac";
-              e.currentTarget.style.color = "#16a34a";
-            }
-          }}
-          onMouseLeave={e => {
-            if (!isSelected) {
-              e.currentTarget.style.borderColor = "#e5e7eb";
-              e.currentTarget.style.color = "#374151";
-            }
-          }}
+          onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "#111827" }}
+          onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "#1f2937" }}
         >
-          {isSelected ? <><CheckCircle style={{ width: "16px", height: "16px" }} /> Selected</> : <>Select This Mandi <ArrowRight style={{ width: "15px", height: "15px" }} /></>}
+          {isSelected ? <><CheckCircle style={{ width: "18px", height: "18px" }} /> Selected</> : <>Select This Mandi <ArrowRight style={{ width: "16px", height: "16px" }} /></>}
         </button>
       </div>
     </div>

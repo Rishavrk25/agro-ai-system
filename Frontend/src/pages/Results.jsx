@@ -33,7 +33,7 @@ export default function Results() {
         mandiName: item.mandiName || item.mandi || `Mandi ${i + 1}`,
         district: item.district || data.district,
         distanceKm: Math.round(item.distanceKm || item.distance || 0),
-        modalPrice: item.modalPrice || item.modal_price || 0,
+        modalPrice: Number(item.modalPrice || item.modal_price || 0),
         minPrice: item.minPrice || item.min_price || 0,
         maxPrice: item.maxPrice || item.max_price || 0,
         transportCost: Math.round(item.transportCost || item.transport_cost || 0),
@@ -42,6 +42,8 @@ export default function Results() {
         dpsLater: Math.round(item.dpsLater || item.dps_later || 0),
         bestDPS: Math.round(item.bestDPS || item.best_dps || Math.max(item.dpsNow || 0, item.dpsLater || 0)),
         decision: item.decision || (item.dpsNow >= item.dpsLater ? "Transport Now" : "Delay Shipment"),
+        predictedPrice: item.predictedPrice || item.predicted_price || 0,
+        predictedDemand: item.predictedDemand || item.predicted_demand || 0,
       }));
       setResults(mapped);
       if (mapped.length > 0) setSelectedMandi(mapped[0]);
@@ -332,7 +334,10 @@ export default function Results() {
                             <p style={{ fontSize: "12px", color: "#9ca3af" }}>{m.district}</p>
                           </td>
                           <td style={{ padding: "14px 16px", textAlign: "right", color: "#374151" }}>{m.distanceKm} km</td>
-                          <td style={{ padding: "14px 16px", textAlign: "right", fontWeight: 700, color: "#0f1f0f" }}>₹{m.modalPrice?.toLocaleString()}</td>
+                          <td style={{ padding: "14px 16px", textAlign: "right", fontWeight: 700, color: "#0f1f0f" }}>
+                            <div>₹{m.modalPrice?.toLocaleString()}</div>
+                            {m.predictedPrice ? <div style={{ fontSize: "11px", color: "#d97706", fontWeight: 600, marginTop: "2px" }}>Est: ₹{m.predictedPrice?.toLocaleString()}</div> : null}
+                          </td>
                           <td style={{ padding: "14px 16px", textAlign: "right", fontWeight: 600, color: "#dc2626" }}>₹{m.transportCost?.toLocaleString()}</td>
                           <td style={{ padding: "14px 16px", textAlign: "right", fontWeight: 800, color: "#16a34a", fontSize: "15px" }}>₹{m.netProfit?.toLocaleString()}</td>
                           <td style={{ padding: "14px 16px", textAlign: "right", fontWeight: 700 }}>{m.bestDPS}</td>

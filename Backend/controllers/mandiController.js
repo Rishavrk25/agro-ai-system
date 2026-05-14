@@ -198,6 +198,9 @@ export const recommendMandi = async (req, res) => {
       const decision = dpsNow > dpsLater ? "Transport Now" : "Delay Shipment";
       const netProfit = modalPrice * quantity - transportCost;
 
+      const predictedPrice = futureInput.price;
+      const predictedDemand = futureInput.demand;
+
       return {
         mandiName: mandi.market,
         district: mandi.district,
@@ -211,6 +214,8 @@ export const recommendMandi = async (req, res) => {
         dpsLater: Math.round(dpsLater * 100) / 100,
         bestDPS: Math.round(bestDPS * 100) / 100,
         decision,
+        predictedPrice: Math.round(predictedPrice * 100) / 100,
+        predictedDemand: Math.round(predictedDemand * 100) / 100,
       };
     });
 

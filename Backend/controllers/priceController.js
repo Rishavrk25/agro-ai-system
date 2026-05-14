@@ -7,24 +7,23 @@ let redisClient = null;
 let isRedisConnected = false;
 
 (async () => {
+  // Only attempt Redis if REDIS_URI is explicitly configured
+  if (!process.env.REDIS_URI) return;
+
   try {
     redisClient = createClient({
-      url: process.env.REDIS_URI || "redis://localhost:6379"
+      url: process.env.REDIS_URI,
+      socket: { reconnectStrategy: false }
     });
 
-    redisClient.on("error", (err) => {
-      console.warn("Redis connection error (Caching disabled):", err.message);
-      isRedisConnected = false;
-    });
-
+    redisClient.on("error", () => { isRedisConnected = false; });
     redisClient.on("ready", () => {
-      console.log("Redis connected successfully (Caching enabled)");
+      console.log("Redis connected (Caching enabled)");
       isRedisConnected = true;
     });
 
     await redisClient.connect();
-  } catch (err) {
-    console.warn("Failed to connect to Redis:", err.message);
+  } catch {
     isRedisConnected = false;
   }
 })();

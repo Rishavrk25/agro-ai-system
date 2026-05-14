@@ -44,7 +44,6 @@ export const fetchMandiPrices = async (state, commodity) => {
           format: "json",
           limit,
           offset,
-          "filters[state]": state,
           "filters[commodity]": commodity,
         },
       });
@@ -58,12 +57,12 @@ export const fetchMandiPrices = async (state, commodity) => {
       allRecords.push(...records);
       offset += limit;
 
-      // Stop if we've fetched all records or hit 500 cap (safety net)
-      hasMore = allRecords.length < total && allRecords.length < 500;
+      // Stop if we've fetched all records or hit 2000 cap (safety net)
+      hasMore = allRecords.length < total && allRecords.length < 2000;
     }
 
     console.log(
-      `📦 Fetched ${allRecords.length} mandi records for ${commodity} in ${state}`,
+      `📦 Fetched ${allRecords.length} mandi records for ${commodity} nationwide (previously filtered by ${state})`,
     );
 
     return allRecords;

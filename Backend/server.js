@@ -12,6 +12,10 @@ import { simulate } from "./controllers/simulationController.js";
 
 const app = express();
 dotenv.config();
+
+// Bypass self-signed certificate errors caused by local network proxies/antivirus
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 const PORT = process.env.PORT || 5000;
 
 //-------------- Socket server --------------------
