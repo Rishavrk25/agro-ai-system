@@ -14,14 +14,19 @@ const DEFAULT_RADIUS_KM = 200;
 // Geocode a mandi — uses cached coordinates from MongoDB if available,
 // otherwise geocodes via OpenCage and saves to cache.
 const getMandiCoordinates = async (mandiName, district, state) => {
-  // Check cache first
+  // Strip suffixes like "APMC", "Yard", "Mandi" that confuse geocoders
+  const cleanName = mandiName
+    .replace(/\s+(APMC|apmc|Yard|yard|Mandi|mandi)\s*$/g, "")
+    .trim();
+
+  // Check cache first (use original name as key)
   const cached = await Mandi.findOne({ name: mandiName, state });
   if (cached) {
     return { latitude: cached.latitude, longitude: cached.longitude };
   }
 
-  // Geocode using existing utility
-  const coords = await getCoordinates(mandiName, district, state);
+  // Geocode using clean name for better accuracy
+  const coords = await getCoordinates(cleanName, district, state);
   if (!coords) return null;
 
   // Save to cache (upsert to handle race conditions)
@@ -102,45 +107,65 @@ export const recommendMandi = async (req, res) => {
     // console.log(uniqueMandis);
 
     // ── Step 4: Geocode each mandi + filter by distance ────────────
-    const geocodePromises = Array.from(uniqueMandis.values()).map(
-      async (record) => {
-        const coords = await getMandiCoordinates(
-          record.market,
-          record.district,
-          record.state,
-        );
-        if (!coords) return null;
+    const geocodeAndFilter = async (radiusKm) => {
+      const geocodePromises = Array.from(uniqueMandis.values()).map(
+        async (record) => {
+          const coords = await getMandiCoordinates(
+            record.market,
+            record.district,
+            record.state,
+          );
+          if (!coords) return null;
 
-        const distanceKm = haversineDistance(
-          farmerCoords.latitude,
-          farmerCoords.longitude,
-          coords.latitude,
-          coords.longitude,
-        );
+          const distanceKm = haversineDistance(
+            farmerCoords.latitude,
+            farmerCoords.longitude,
+            coords.latitude,
+            coords.longitude,
+          );
 
-        if (distanceKm > maxRadius) return null;
+          if (distanceKm > radiusKm) return null;
 
-        return {
-          ...record,
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          distanceKm: Math.round(distanceKm * 10) / 10,
-        };
-      },
-    );
-    
+          return {
+            ...record,
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            distanceKm: Math.round(distanceKm * 10) / 10,
+          };
+        },
+      );
+      return (await Promise.all(geocodePromises)).filter(Boolean);
+    };
 
-    const geocodedMandis = (await Promise.all(geocodePromises)).filter(
-      Boolean,
-    );
+    // Try the requested radius, then progressively expand if no results
+    let geocodedMandis = await geocodeAndFilter(maxRadius);
+    let effectiveRadius = maxRadius;
 
-    // console.log(geocodedMandis);
+    if (geocodedMandis.length === 0 && maxRadius < 300) {
+      console.log(`⚠️  No mandis within ${maxRadius}km, expanding to 300km...`);
+      geocodedMandis = await geocodeAndFilter(300);
+      effectiveRadius = 300;
+    }
+    if (geocodedMandis.length === 0 && effectiveRadius < 600) {
+      console.log(`⚠️  No mandis within 300km, expanding to 600km...`);
+      geocodedMandis = await geocodeAndFilter(600);
+      effectiveRadius = 600;
+    }
+    if (geocodedMandis.length === 0) {
+      // Last resort: pick the 5 closest mandis regardless of distance
+      console.log(`⚠️  No mandis within 600km, using 5 closest nationwide...`);
+      geocodedMandis = await geocodeAndFilter(Infinity);
+      geocodedMandis = geocodedMandis
+        .sort((a, b) => a.distanceKm - b.distanceKm)
+        .slice(0, 5);
+      effectiveRadius = null; // signals "nationwide"
+    }
 
     if (geocodedMandis.length === 0) {
       return errorResponse(
         res,
-        "No mandis within radius",
-        `No mandis found within ${maxRadius}km for ${commodity}`,
+        "No mandi data available for this commodity",
+        `No mandis found for ${commodity} in the API data`,
         404,
       );
     }
@@ -242,7 +267,8 @@ export const recommendMandi = async (req, res) => {
           longitude: farmerCoords.longitude,
         },
         commodity,
-        searchRadiusKm: maxRadius,
+        searchRadiusKm: effectiveRadius ?? "nationwide",
+        radiusExpanded: effectiveRadius !== maxRadius,
         totalMandisFound: rankedMandis.length,
         recommendation: rankedMandis[0],
         allMandis: rankedMandis,

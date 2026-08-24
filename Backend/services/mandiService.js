@@ -36,7 +36,8 @@ export const fetchMandiPrices = async (state, commodity) => {
     const limit = 100;
     let hasMore = true;
 
-    // Paginate through results — some states can have 100+ mandis
+    // NOTE: data.gov.in `filters[state]` does not work reliably — we fetch
+    // all commodity records nationwide and apply distance filtering later.
     while (hasMore) {
       const response = await axios.get(BASE_URL, {
         params: {
@@ -48,7 +49,7 @@ export const fetchMandiPrices = async (state, commodity) => {
         },
       });
 
-      const { records, total, count } = response.data;
+      const { records, total } = response.data;
 
       if (!records || records.length === 0) {
         break;
@@ -57,12 +58,12 @@ export const fetchMandiPrices = async (state, commodity) => {
       allRecords.push(...records);
       offset += limit;
 
-      // Stop if we've fetched all records or hit 2000 cap (safety net)
+      // Stop if we've fetched everything or hit the 2000-record safety cap
       hasMore = allRecords.length < total && allRecords.length < 2000;
     }
 
     console.log(
-      `📦 Fetched ${allRecords.length} mandi records for ${commodity} nationwide (previously filtered by ${state})`,
+      `📦 Fetched ${allRecords.length} mandi records for ${commodity} nationwide`,
     );
 
     return allRecords;
