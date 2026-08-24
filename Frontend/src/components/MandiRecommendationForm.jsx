@@ -95,8 +95,9 @@ export function MandiRecommendationForm() {
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
           try {
-            const res = await axios.get(`http://localhost:5000/api/location/reverse?lat=${lat}&lon=${lon}`);
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/location/reverse?lat=${lat}&lon=${lon}`);
             if (res.data.success) {
+              // console.log(res.data.data);
               const { village, district, state } = res.data.data;
               setFormData(prev => ({
                 ...prev,
